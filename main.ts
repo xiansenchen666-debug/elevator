@@ -1,4 +1,5 @@
-import designDocHtml from "./电梯安全监测系统设计说明书.html" with { type: "text" };
+const designDocUrl = new URL("./电梯安全监测系统设计说明书.html", import.meta.url);
+const designDocHtml = await Deno.readTextFile(designDocUrl);
 
 const HTML_HEADERS = {
   "content-type": "text/html; charset=utf-8",

@@ -1,5 +1,5 @@
 {
   "tasks": {
-    "start": "deno run --allow-net main.ts"
+    "start": "deno run --allow-net --allow-read=./电梯安全监测系统设计说明书.html main.ts"
   }
 }
