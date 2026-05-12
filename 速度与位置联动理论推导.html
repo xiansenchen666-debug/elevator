@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>速度与位置联动控制理论推导 - 电梯安全监测系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- 引入 MathJax 用于渲染数学公式 -->
+    <script>
+      MathJax = {
+        tex: {
+          inlineMath: [['$', '$'], ['\\(', '\\)']],
+          displayMath: [['$$', '$$'], ['\\[', '\\]']]
+        },
+        svg: {
+          fontCache: 'global'
+        }
+      };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+        
+        :root {
+            --primary: #2563eb;
+            --primary-light: #dbeafe;
+            --secondary: #64748b;
+            --accent: #f59e0b;
+            --dark: #0f172a;
+            --code-bg: #1e1e1e;
+            --danger: #ef4444;
+            --success: #22c55e;
+        }
+
+        body { font-family: 'Inter', 'Noto Sans SC', sans-serif; background-color: #f8fafc; color: #334155; scroll-behavior: smooth; }
+        
+        .content-container { max-width: 900px; margin: 0 auto; padding: 4rem 2rem; }
+        
+        .design-card { background: white; border: 1px solid #e2e8f0; border-radius: 1.25rem; padding: 3rem; margin-bottom: 3rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        
+        h1 { font-size: 2.25rem; font-weight: 800; color: var(--dark); letter-spacing: -0.04em; margin-bottom: 1.5rem; line-height: 1.2; text-align: center;}
+        h2 { font-size: 1.5rem; font-weight: 700; color: var(--dark); margin-top: 3rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem; border-bottom: 2px solid #f1f5f9; padding-bottom: 0.75rem;}
+        h2::before { content: ''; width: 6px; height: 24px; background: var(--primary); border-radius: 3px; display: inline-block; }
+        h3 { font-size: 1.25rem; font-weight: 600; color: var(--dark); margin-top: 2rem; margin-bottom: 1rem; }
+        
+        p { line-height: 1.8; margin-bottom: 1rem; font-size: 1rem; }
+        
+        .math-box { background: #f8fafc; padding: 1.5rem; border-radius: 0.75rem; border: 1px solid #e2e8f0; margin: 1.5rem 0; overflow-x: auto; text-align: center; font-size: 1.1rem;}
+        
+        .note-box { background: var(--primary-light); border-left: 4px solid var(--primary); padding: 1.25rem 1.5rem; border-radius: 0 0.5rem 0.5rem 0; margin: 2rem 0; }
+        .note-box h4 { color: var(--primary); font-weight: 700; margin-bottom: 0.5rem; margin-top: 0; }
+        
+        ul { list-style-type: none; padding-left: 0; margin-bottom: 1.5rem; }
+        ul li { position: relative; padding-left: 1.5rem; margin-bottom: 0.75rem; line-height: 1.6; }
+        ul li::before { content: '•'; color: var(--primary); font-weight: bold; position: absolute; left: 0; font-size: 1.2rem; line-height: 1; top: 0.1rem; }
+    </style>
+</head>
+<body>
+    <div class="content-container">
+        <div class="design-card">
+            <h1>速度与位置联动控制理论推导</h1>
+            <p class="text-center text-gray-500 mb-8">用于方案设计与参数计算，说明实物控制系统的理论依据</p>
+            
+            <!-- 1. 问题定义 -->
+            <h2>1. 问题定义与变量约定</h2>
+            <p>为实现电梯（或轿厢/平台）运行过程中的“速度—位置联动”，需要在任意时刻同时满足：</p>
+            <ul>
+                <li><strong>位置约束</strong>：轿厢沿井道方向位移为 \(x(t)\)，到目标楼层位置为 \(x_{\text{tar}}\)；</li>
+                <li><strong>速度约束</strong>：运行速度为 \(v(t)\)，需满足舒适性与安全性限制（最高速度、加速度、减速度等）；</li>
+                <li><strong>制动约束</strong>：在任意剩余距离内，系统必须保证可安全减速至零速并停靠在允许误差范围内。</li>
+            </ul>
+            
+            <div class="bg-gray-50 p-6 rounded-xl border border-gray-200 my-6">
+                <h3 class="!mt-0">变量定义：</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 text-sm md:text-base">
+                    <div>\(x(t)\)：当前位置（m）</div>
+                    <div>\(v(t)=\frac{dx}{dt}\)：速度（m/s）</div>
+                    <div>\(a(t)=\frac{dv}{dt}\)：加速度（m/s\(^2\)）</div>
+                    <div>\(a_{\max}\)：最大允许加速度</div>
+                    <div>\(d_{\max}\)：最大允许减速度</div>
+                    <div>\(v_{\max}\)：最大允许速度</div>
+                    <div class="col-span-1 md:col-span-2 text-blue-600 font-semibold mt-2">\(s(t)=x_{\text{tar}}-x(t)\)：剩余距离（m）</div>
+                </div>
+            </div>
+            <p>速度—位置联动的核心，就是用“剩余距离 \(s\)”去约束“允许速度 \(v\)”，使系统始终处于可控、可停的安全包络内。</p>
+
+            <!-- 2. 基本运动学关系 -->
+            <h2>2. 基本运动学关系：由微分到积分</h2>
+            <p>由定义：</p>
+            <div class="math-box">
+                \[ v=\frac{dx}{dt},\quad a=\frac{dv}{dt} \]
+            </div>
+            <p>将 \(a\) 写成关于 \(x\) 的形式（链式法则）：</p>
+            <div class="math-box">
+                \[ a=\frac{dv}{dt}=\frac{dv}{dx}\cdot\frac{dx}{dt}=v\frac{dv}{dx} \]
+            </div>
+            <p>整理并对两端积分（从 \((x_0,v_0)\) 到 \((x,v)\)）：</p>
+            <div class="math-box">
+                \[ v\,dv=a\,dx \quad \Rightarrow \quad \int_{v_0}^{v} v\,dv=\int_{x_0}^{x} a\,dx \]
+                \[ \frac{1}{2}(v^2-v_0^2)=a(x-x_0) \]
+            </div>
+            <p>整理为经典的“速度—位移”关系：</p>
+            <div class="math-box">
+                \[ v^2=v_0^2+2a\Delta x \]
+            </div>
+            <p>其中 \(\Delta x=x-x_0\)。这一式子是后续“用剩余距离限制允许速度”的理论基础。</p>
+
+            <!-- 3. 安全制动约束 -->
+            <h2>3. 安全制动约束：由剩余距离推导允许速度上限</h2>
+            <p>考虑从当前速度 \(v\) 在剩余距离 \(s\) 内减速到零速，假设减速度能力不超过 \(d_{\max}\)（恒定减速度模型，工程上用于上限约束最常见）。</p>
+            <p>令最终速度 \(v_{\text{end}}=0\)，加速度取 \(a=-d_{\max}\)，位移 \(\Delta x=s\)。代入：</p>
+            <div class="math-box">
+                \[ 0^2=v^2+2(-d_{\max})s \quad \Rightarrow \quad v^2=2d_{\max}s \]
+            </div>
+            <p>因此得到“基于剩余距离的允许速度上限”（速度—位置联动律）：</p>
+            <div class="math-box text-blue-600 font-bold">
+                \[ v_{\text{allow}}(s)=\sqrt{2d_{\max}s} \]
+            </div>
+            <p>再考虑最高速度限制：</p>
+            <div class="math-box">
+                \[ v_{\text{ref}}(s)=\min\left(v_{\max},\sqrt{2d_{\max}s}\right) \]
+            </div>
+            <ul>
+                <li><strong>离目标远（\(s\) 大）</strong>：\(\sqrt{2d_{\max}s}\) 很大，速度主要受 \(v_{\max}\) 限制；</li>
+                <li><strong>离目标近（\(s\) 小）</strong>：允许速度随 \(\sqrt{s}\) 下降，系统自然进入减速段，保证“来得及停”。</li>
+            </ul>
+
+            <!-- 4. 梯形速度曲线 -->
+            <h2>4. 梯形速度曲线的联动推导（加速—匀速—减速）</h2>
+            <p>在工程应用中，为兼顾效率与舒适性，通常采用“梯形速度曲线”：</p>
+            <ul>
+                <li>加速段：\(a=+a_{\max}\)</li>
+                <li>匀速段：\(v=v_{\max}\)</li>
+                <li>减速段：\(a=-d_{\max}\)</li>
+            </ul>
+            <p><strong>1）达到 \(v_{\max}\) 所需距离</strong></p>
+            <div class="math-box">
+                \[ s_{\text{acc}}=\frac{v_{\max}^2}{2a_{\max}} \]
+            </div>
+            <p><strong>2）从 \(v_{\max}\) 减速到 0 所需距离</strong></p>
+            <div class="math-box">
+                \[ s_{\text{dec}}=\frac{v_{\max}^2}{2d_{\max}} \]
+            </div>
+            <p><strong>3）目标总行程 \(S\)（起点到终点的距离）</strong></p>
+            <p>若 \(S \ge s_{\text{acc}}+s_{\text{dec}}\)，则存在匀速段：</p>
+            <div class="math-box">
+                \[ s_{\text{const}}=S-s_{\text{acc}}-s_{\text{dec}} \]
+            </div>
+            <p>若 \(S < s_{\text{acc}}+s_{\text{dec}}\)，则无法达到 \(v_{\max}\)，形成“三角速度曲线”，峰值速度 \(v_p\) 由距离约束决定：</p>
+            <div class="math-box">
+                \[ S=\frac{v_p^2}{2a_{\max}}+\frac{v_p^2}{2d_{\max}} \quad \Rightarrow \quad v_p=\sqrt{\frac{2Sa_{\max}d_{\max}}{a_{\max}+d_{\max}}} \]
+            </div>
+
+            <!-- 5. 离散实现形式 -->
+            <h2>5. 离散实现形式（与实际控制系统对接）</h2>
+            <p>在单片机/控制器以周期 \(T_s\) 采样时，可用离散形式描述联动：</p>
+            <div class="math-box">
+                \[ x[k]=x[k-1]+v[k-1]T_s \quad \text{(位置更新)} \]
+                \[ s[k]=x_{\text{tar}}-x[k] \quad \text{(剩余距离)} \]
+                \[ v_{\text{allow}}[k]=\min\left(v_{\max},\sqrt{2d_{\max}\,|s[k]|}\right) \quad \text{(允许速度)} \]
+                \[ v_{\text{ref}}[k]=\operatorname{sign}(s[k])\cdot v_{\text{allow}}[k] \quad \text{(速度参考)} \]
+            </div>
+            <p>控制器再根据 \(v_{\text{ref}}\) 做速度闭环（如 PID），从而实现“位置决定速度上限，速度跟随上限”的联动控制。</p>
+
+            <!-- 6. 实物说明 -->
+            <div class="note-box">
+                <h4><i class="fas fa-info-circle mr-2"></i> 关于实物制作的补充说明</h4>
+                <p class="mb-0 text-sm leading-relaxed">本课题实物制作阶段主要集中在硬件搭建、通信联调与功能验证（如传感器采集、报警逻辑、继电器执行、上位机监测等），并未在制作过程中逐步进行上述公式推导与参数辨识。但系统设计中“速度—位置联动”的策略依据运动学与制动安全包络理论确定。该推导属于系统的“方案设计与理论依据”，用于论证控制策略合理性并为参数设定提供计算依据。</p>
+            </div>
+
+        </div>
+    </div>
+</body>
+</html>
